@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#17152f">
+<title>포션 매직 - Potion Magic</title>
+<style>
+:root{--bg:#17152f;--gold:#ffd77a;--cream:#fff8e9;--muted:#b9b4d2}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(ellipse at 50% 0%,#39305e,#211d43 55%,#151329);color:var(--cream);overscroll-behavior:none}
+body{min-height:100svh;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);display:flex;justify-content:center}
+.app{width:min(100%,520px);min-height:100svh;display:flex;flex-direction:column;padding:16px 4px 18px}
+.top{display:flex;align-items:center;justify-content:space-between}.brand{font-size:13px;letter-spacing:2.5px;color:var(--gold);font-weight:900}.coins{background:#302b53;border:1px solid #514775;border-radius:99px;padding:8px 13px;font-weight:800;color:#ffe29a}
+h1{font-size:clamp(28px,8vw,39px);line-height:1.08;margin:20px 0 5px;text-align:center;text-shadow:0 3px #0e0d20}.sub{text-align:center;color:var(--muted);font-size:13px;margin:0 0 18px}
+.levelbar{display:flex;justify-content:space-between;align-items:center;margin:0 3px 10px;font-size:13px;color:var(--muted)}.levelbar strong{color:var(--gold);font-size:16px}
+.progress{height:7px;background:#383354;border-radius:20px;overflow:hidden;margin:0 3px 16px}.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#8d7cff,#ff9fbe);border-radius:20px;transition:width .3s}
+.board{flex:1;min-height:300px;display:flex;align-content:center;justify-content:center;align-items:center;flex-wrap:wrap;gap:22px 13px;padding:18px 3px 22px}
+.tube-wrap{width:calc((100% - 52px)/4);max-width:82px;display:flex;justify-content:center}
+.tube{width:clamp(48px,12vw,64px);height:clamp(154px,39vw,194px);border:3px solid #e2e2ffcc;border-top:0;border-radius:0 0 19px 19px;position:relative;display:flex;flex-direction:column-reverse;overflow:hidden;background:linear-gradient(90deg,#ffffff22,#ffffff06 35%,#ffffff1c);box-shadow:inset 5px 0 9px #ffffff12,0 9px 15px #08071766;cursor:pointer;transition:transform .18s,border-color .18s;padding:0}
+.tube:before{content:"";position:absolute;top:0;left:-4px;right:-4px;height:4px;border-radius:5px;background:#e7e5ff;z-index:2}
+.tube.selected{transform:translateY(-13px);border-color:var(--gold);filter:drop-shadow(0 0 8px #ffdc7b99)}
+.liquid{height:25%;width:100%;flex:none;border-top:1px solid #ffffff55;box-shadow:inset 0 5px 7px #ffffff1b}.liquid:first-child{border-radius:0 0 13px 13px}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:4px 0 12px}
+button{font:inherit;border:0;cursor:pointer;touch-action:manipulation}
+.tool{background:#302c53;color:#f7eecf;border:1px solid #514a77;border-radius:15px;padding:12px 5px;font-weight:800;font-size:13px;box-shadow:0 4px 0 #111027}
+.tool small{display:block;color:#bdb5dc;font-size:10px;font-weight:600;margin-top:3px}
+.tip{text-align:center;color:#bdb5d2;font-size:12px;min-height:22px;margin:0 0 12px}
+.primary{width:100%;padding:15px;border-radius:16px;background:linear-gradient(135deg,#ffdc8c,#ffad9e);color:#39264b;font-size:16px;font-weight:1000;box-shadow:0 5px 0 #9d6171}
+.overlay{position:fixed;inset:0;background:#0b0a1dcc;display:none;align-items:center;justify-content:center;padding:22px;z-index:10}.overlay.show{display:flex}
+.modal{width:min(100%,350px);background:linear-gradient(160deg,#39325f,#24203f);border:1px solid #716394;border-radius:25px;padding:27px 22px;text-align:center;box-shadow:0 20px 70px #0009}
+.modal .emoji{font-size:55px}.modal h2{margin:8px 0;color:var(--gold);font-size:27px}.modal p{color:#d0cbe0;font-size:14px;line-height:1.5}.modal .primary{margin-top:12px}
+.footer{text-align:center;color:#797493;font-size:10px;margin-top:17px}
+@media(max-height:700px){.board{min-height:250px;gap:14px 10px;padding:10px 0}.tube{height:clamp(125px,32vh,165px)}h1{margin-top:12px}.sub{margin-bottom:12px}}
+</style>
+</head>
+<body><main class="app">
+<div class="top"><div class="brand">✦ POTION MAGIC ✦</div><div class="coins">🪙 <span id="coins">0</span></div></div>
+<h1>마법 물약 정렬</h1><p class="sub">흩어진 색을 모아 마법의 물약을 완성하세요!</p>
+<div class="levelbar"><span>STAGE <strong id="level">1</strong></span><span id="moves">이동 0회</span></div><div class="progress"><span id="progress"></span></div>
+<section class="board" id="board" aria-label="물약 병"></section>
+<p class="tip" id="tip">병을 선택하고, 물약을 옮길 병을 탭하세요.</p>
+<div class="actions">
+<button class="tool" id="undo">↶ 되돌리기<small>한 수 취소</small></button>
+<button class="tool" id="add">＋ 병 추가<small>빈 병 하나</small></button>
+<button class="tool" id="restart">⟳ 다시 하기<small>스테이지 재시작</small></button>
+</div><button class="primary" id="hint">✨ 힌트 보기</button>
+<div class="footer">작은 마법사의 포션 연구실 · 오프라인 플레이 가능</div></main>
+<div class="overlay" id="win"><div class="modal"><div class="emoji">🧙‍♀️✨</div><h2>스테이지 클리어!</h2><p id="winText"></p><button class="primary" id="next">다음 스테이지 →</button></div></div>
+<div class="overlay" id="hintModal"><div class="modal"><div class="emoji">🔮</div><h2>마법사의 힌트</h2><p id="hintText"></p><button class="primary" id="closeHint">알겠어요!</button></div></div>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),colors=['#ff6685','#54c8ed','#ffc857','#a78bfa','#69d69a','#ff9f54','#ec7bd2','#a9d66f','#6c91ff','#d8a46a'];
+let level=1,coins=0,tubes=[],initial=[],selected=-1,moves=0,history=[],extra=0,locked=false;
+const cap=4,rand=n=>Math.floor(Math.random()*n),snap=()=>tubes.map(t=>t.slice());
+function newGame(){
+ const count=Math.min(2+Math.floor((level-1)/2),8);tubes=Array.from({length:count+2},(_,i)=>i<count?Array(cap).fill(i):[]);
+ let prev=null;
+ for(let k=0;k<24+level*7;k++){
+  const opts=[];
+  for(let a=0;a<tubes.length;a++)if(tubes[a].length){const c=tubes[a].at(-1);
+   for(let b=0;b<tubes.length;b++)if(a!==b&&tubes[b].length<cap&&(!tubes[b].length||tubes[b].at(-1)===c)&&!(prev&&prev[0]===b&&prev[1]===a))opts.push([a,b]);
+  }
+  if(!opts.length)break;const [a,b]=opts[rand(opts.length)];tubes[b].push(tubes[a].pop());prev=[a,b];
+ }
+ for(let i=0;i<extra;i++)tubes.push([]);
+ initial=snap();selected=-1;moves=0;history=[];locked=false;render();
+ $('level').textContent=level;$('moves').textContent='이동 0회';$('progress').style.width='0%';$('coins').textContent=coins;$('tip').textContent='병을 선택하고, 물약을 옮길 병을 탭하세요.';
+}
+function render(){
+ const board=$('board');board.innerHTML='';
+ tubes.forEach((t,i)=>{const wrap=document.createElement('div');wrap.className='tube-wrap';const el=document.createElement('button');el.className='tube'+(selected===i?' selected':'');el.setAttribute('aria-label','병 '+(i+1));
+ t.forEach(c=>{const li=document.createElement('div');li.className='liquid';li.style.background='linear-gradient(90deg,'+shade(colors[c],-15)+','+colors[c]+' 45%,'+shade(colors[c],12)+')';el.appendChild(li)});
+ el.addEventListener('click',()=>tap(i));wrap.appendChild(el);board.appendChild(wrap)});
+}
+function shade(hex,amt){let n=parseInt(hex.slice(1),16),r=Math.max(0,Math.min(255,(n>>16)+amt)),g=Math.max(0,Math.min(255,((n>>8)&255)+amt)),b=Math.max(0,Math.min(255,(n&255)+amt));return '#'+(1<<24|r<<16|g<<8|b).toString(16).slice(1)}
+function tap(i){
+ if(locked)return;
+ if(selected<0){if(tubes[i].length){selected=i;render()}return}
+ if(selected===i){selected=-1;render();return}
+ const a=tubes[selected],b=tubes[i],c=a.at(-1);
+ if(a.length&&b.length<cap&&(!b.length||b.at(-1)===c)){
+  history.push(snap());while(a.length&&a.at(-1)===c&&b.length<cap)b.push(a.pop());moves++;$('moves').textContent='이동 '+moves+'회';$('tip').textContent='좋아요! 같은 색깔을 계속 모아보세요.';selected=-1;render();checkWin();
+ }else{selected=tubes[i].length?i:-1;$('tip').textContent=selected<0?'같은 색깔이거나 빈 병에만 옮길 수 있어요.':'선택한 병을 바꿨어요.';render()}
+}
+function checkWin(){
+ const done=tubes.every(t=>!t.length||(t.length===cap&&t.every(c=>c===t[0])));
+ if(done&&tubes.some(t=>t.length)){locked=true;const reward=10+level*2;coins+=reward;$('coins').textContent=coins;$('progress').style.width='100%';$('winText').textContent='물약을 '+moves+'번 이동해서 완성했어요! 코인 '+reward+'개 획득!';$('win').classList.add('show')}
+}
+$('undo').onclick=()=>{if(history.length){tubes=history.pop();moves=Math.max(0,moves-1);selected=-1;$('moves').textContent='이동 '+moves+'회';render();$('tip').textContent='한 수 되돌렸어요.'}};
+$('add').onclick=()=>{if(tubes.length<12){history.push(snap());tubes.push([]);extra++;render();$('tip').textContent='빈 병을 추가했어요!'}else $('tip').textContent='병은 최대 12개까지 사용할 수 있어요.'};
+$('restart').onclick=()=>{tubes=initial.map(t=>t.slice());history=[];moves=0;selected=-1;locked=false;$('moves').textContent='이동 0회';$('progress').style.width='0%';$('tip').textContent='처음 배치로 돌아왔어요.';render()};
+$('hint').onclick=()=>{let found=null;for(let a=0;a<tubes.length&&!found;a++)if(tubes[a].length){let c=tubes[a].at(-1);for(let b=0;b<tubes.length;b++)if(a!==b&&tubes[b].length<cap&&(!tubes[b].length||tubes[b].at(-1)===c)){found=[a+1,b+1];break}}
+ $('hintText').textContent=found?'병 '+found[0]+'번을 선택한 다음 병 '+found[1]+'번을 탭해 보세요.':'빈 병을 추가하거나 다른 색의 맨 위 물약을 옮겨보세요.';$('hintModal').classList.add('show')};
+$('closeHint').onclick=()=>$('hintModal').classList.remove('show');$('next').onclick=()=>{$('win').classList.remove('show');level++;extra=0;newGame()};newGame();
+})();
+</script></body></html>
